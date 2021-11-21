@@ -336,6 +336,52 @@ export default class Socket extends EventEmitter {
     }
 
     /**
+     * Sends the contents of a blob.
+     *
+     * Returns `true` if the entire data was flushed successfully to the kernel buffer. Returns `false` if all or part of the data
+     * was queued in user memory. `'drain'` will be emitted when the buffer is again free.
+     *
+     * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
+     *
+     * @param {Blob} blob
+     * @param {(err?: Error) => void} [cb]
+     *
+     * @return {boolean}
+     */
+    writeBlob(blob, cb) {
+        const self = this;
+        if (this._state === STATE.DISCONNECTED) throw new Error('Socket is not connected.');
+
+        this._writeBufferSize += blob.size;
+        const currentMsgId = this._msgId;
+        this._msgId = (this._msgId + 1) % Number.MAX_SAFE_INTEGER;
+        const msgEvtHandler = (/** @type {{id: number, msgId: number, err?: string}} */ evt) => {
+            const { msgId, err } = evt;
+            if (msgId === currentMsgId) {
+                this._msgEvtEmitter.removeListener('written', msgEvtHandler);
+                this._writeBufferSize -= blob.size;
+                this._lastRcvMsgId = msgId;
+                if (self._timeout) self._activateTimer();
+                if (this.writableNeedDrain && this._lastSentMsgId == msgId) {
+                    this.writableNeedDrain = false;
+                    this.emit('drain');
+                }
+                if (cb) {
+                    if (err) cb(new Error(err));
+                    else cb();
+                }
+            }
+        };
+        // Callback equivalent with better performance
+        this._msgEvtEmitter.on('written', msgEvtHandler, this);
+        const ok = this._writeBufferSize < this.writableHighWaterMark;
+        if (!ok) this.writableNeedDrain = true;
+        this._lastSentMsgId = currentMsgId;
+        Sockets.writeBlob(this._id, blob, currentMsgId);
+        return ok;
+    }
+
+    /**
      * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
      */
     pause() {

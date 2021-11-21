@@ -99,6 +99,19 @@ public class TcpSocketModule extends ReactContextBaseJavaModule {
     @SuppressLint("StaticFieldLeak")
     @SuppressWarnings("unused")
     @ReactMethod
+    public void writeBlob(final int cId, @NonNull final ReadableMap blob, final int msgId) throws IllegalArgumentException {
+        BlobModule blobModule = getBlobModule("readAsDataURL");
+        if (blobModule == null) throw new IllegalStateException("Could not get BlobModule from ReactApplicationContext");
+
+        byte[] data = blobModule.resolve(blob.getString("blobId"), blob.getInt("offset"), blob.getInt("size"));
+        if (data == null) throw new IllegalStateException("The specified blob is invalid");
+
+        getTcpClient(cId).writeBlob(msgId, data);
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    @SuppressWarnings("unused")
+    @ReactMethod
     public void end(final Integer cId) {
         executorService.execute(new Runnable() {
             @Override
