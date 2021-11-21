@@ -1,2 +1,3 @@
-export const nativeEventEmitter: import("react-native").EventEmitter;
+export const nativeEventEmitter: NativeEventEmitter;
 export function getNextId(): number;
+import { NativeEventEmitter } from "react-native";

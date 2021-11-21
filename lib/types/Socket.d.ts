@@ -170,6 +170,20 @@ export default class Socket extends EventEmitter<SocketEvents & ReadableEvents, 
      */
     write(buffer: string | Buffer | Uint8Array, encoding?: "ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex" | undefined, cb?: ((err?: Error | undefined) => void) | undefined): boolean;
     /**
+     * Sends the contents of a blob.
+     *
+     * Returns `true` if the entire data was flushed successfully to the kernel buffer. Returns `false` if all or part of the data
+     * was queued in user memory. `'drain'` will be emitted when the buffer is again free.
+     *
+     * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
+     *
+     * @param {Blob} blob
+     * @param {(err?: Error) => void} [cb]
+     *
+     * @return {boolean}
+     */
+    writeBlob(blob: Blob, cb?: ((err?: Error | undefined) => void) | undefined): boolean;
+    /**
      * Pauses the reading of data. That is, `'data'` events will not be emitted. Useful to throttle back an upload.
      */
     pause(): void;
